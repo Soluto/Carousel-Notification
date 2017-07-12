@@ -714,6 +714,7 @@ public class Carousal {
             Intent i = new Intent();
             i.setAction(CarousalConstants.CAROUSAL_ITEM_CLICKED_INTENT_FILTER);
             Bundle bundle = new Bundle();
+            bundle.putParcelable(CAROUSAL_ITEM_CLICKED_KEY, currentItem);
             i.putExtras(bundle);
             context.getApplicationContext().sendBroadcast(i);
             try {
