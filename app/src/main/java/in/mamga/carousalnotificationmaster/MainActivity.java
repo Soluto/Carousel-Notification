@@ -2,6 +2,7 @@ package in.mamga.carousalnotificationmaster;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -18,9 +19,13 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Map;
 
+import in.mamga.carousalnotification.AnalyticsWriter;
 import in.mamga.carousalnotification.Carousal;
+import in.mamga.carousalnotification.CarousalConstants;
 import in.mamga.carousalnotification.CarousalItem;
+import in.mamga.carousalnotification.LoggingApi;
 
 public class MainActivity extends AppCompatActivity {
     Button btnQuote;
@@ -69,42 +74,78 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fetchMarsPhotos() {
-        tvStatus.setText( FETCHING);
-        showDialog("Fetching Photos");
-        JSONParser.OnConnectionListener onConnectionListener = new JSONParser.OnConnectionListener() {
-            @Override
-            public void onResponse(String s) {
-                hideDialog();
-                tvStatus.setText( BUILDING_CAROUSAL);
-                tvResponse.setText("Fetched Result = " + s);
-                buildMarsCarousal(s);
-            }
-
-            @Override
-            public void onError() {
-                hideDialog();
-                tvStatus.setText(FETCHING_ERROR);
-
-            }
-        };
-        JSONParser jsonParser = new JSONParser(onConnectionListener);
-        jsonParser.fetchJson("https://mars-photos.herokuapp.com/api/v1/rovers/opportunity/photos?earth_date=2015-6-3&camera=pancam");
-
+        buildMarsCarousal();
     }
 
     /**
      * once we receive data from api, we start building the carousal
-     * @param s : response string
      */
-    private void buildMarsCarousal(String s) {
+    private void buildMarsCarousal() {
+        Carousal carousal = Carousal.with(this, new AnalyticsWriter() {
+            @Override
+            public void write(String eventName, Map<String, Object> extraData) {
 
-        ArrayList<RoverItem> photoList = new ArrayList<RoverItem>();
+            }
+        }, new LoggingApi() {
+            @Override
+            public void debug(String msg) {
+
+            }
+
+            @Override
+            public void info(String msg) {
+
+            }
+
+            @Override
+            public void warn(String msg) {
+
+            }
+
+            @Override
+            public void warn(String msg, Throwable t) {
+
+            }
+
+            @Override
+            public void error(String msg) {
+
+            }
+
+            @Override
+            public void error(String msg, Throwable t) {
+
+            }
+        }).beginTransaction();
+        carousal.setContentTitle("Opportunity on Mars!").setContentText("Check out these photographs by Opportunity on Mars.");
+        /*for (int i = 0; i < 4 ; i++ ) {
+            //Notice here. In case you want to preserve data of each item, you can save a gson string
+            // of the object in carousal item's id.  Though not much recommended.
+            String imageUrl = "https://solutokb.staging.wpengine.com/wp-content/uploads/notificationCrousel" + String.valueOf(i + 1) + ".png";
+
+            CarousalItem cItem = new CarousalItem(String.valueOf(i), "Title", "Desc", imageUrl);
+            carousal.addCarousalItem(cItem);
+        }*/
+        CarousalItem cItem1 = new CarousalItem("1", null, "Delete duplicate, blurry, and other photos that are hogging your storage.", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_1.png", null, Color.BLACK);
+        carousal.addCarousalItem(cItem1);
+        CarousalItem cItem2 = new CarousalItem("2", null, "Go through the music on your phone and clear songs you moved on from.", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_2.png", null, Color.GRAY);
+        carousal.addCarousalItem(cItem2);
+        CarousalItem cItem3 = new CarousalItem("3", null, "We all have those apps we don’t use anymore, delete them!", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_3.png", null, Color.GREEN);
+        carousal.addCarousalItem(cItem3);
+        CarousalItem cItem4 = new CarousalItem("4", null, "In your messaging apps delete conversations with lots of media.", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_4.png", null, Color.BLUE);
+        carousal.addCarousalItem(cItem4);
+        CarousalItem cItem5 = new CarousalItem("5", null, null, "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_5.png", null, Color.BLACK);
+        carousal.addCarousalItem(cItem5);
+        carousal.setBigContentText("text").setBigContentTitle("Title");
+
+        carousal.buildCarousal();
+      /*  ArrayList<RoverItem> photoList = new ArrayList<RoverItem>();
         try {
             JSONObject photoOb = new JSONObject(s);
             JSONArray photos = photoOb.getJSONArray("photos");
             Type type = new TypeToken<RoverItem>() {
             }.getType();
-            for (int i = 0; i < photos.length() && i < 10 ; i = i + 4 ) {
+            for (int i = 0; i < photos.length() && i < 10 ; i = i+2 ) {
 
                 RoverItem item = new Gson().fromJson(photos.get(i).toString(), type);
                 photoList.add(item);
@@ -123,8 +164,11 @@ public class MainActivity extends AppCompatActivity {
 
                 //Notice here. In case you want to preserve data of each item, you can save a gson string
                 // of the object in carousal item's id.  Though not much recommended.
+                String imageUrl = photo.getImg_src();
 
-                CarousalItem cItem = new CarousalItem(new Gson().toJson(photo).toString(), photo.getEarth_date(), null, photo.getImg_src());
+                imageUrl = imageUrl.replaceFirst("http:","https:");
+
+                CarousalItem cItem = new CarousalItem(new Gson().toJson(photo).toString(), photo.getEarth_date(), null, imageUrl);
 
                 //Additionally we can set a type to it. It is useful if we are showing more than one type
                 //of data in carousal. so that we know, where to go when an item is clicked.
@@ -132,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
                 carousal.addCarousalItem(cItem);
             }
             carousal.buildCarousal();
-        }
+        }*/
     }
 
     private void fetchQuotes() {
@@ -164,35 +208,6 @@ public class MainActivity extends AppCompatActivity {
      * @param s : response string
      */
     private void buildQuoteCarousal(String s) {
-        ArrayList<QuoteItem> quotesList = new ArrayList<QuoteItem>();
-        try {
-            JSONArray quotes = new JSONArray(s);
-            for (int i = 0; i < quotes.length() ; i++) {
-                JSONObject quote = (JSONObject) quotes.get(i);
-                quotesList.add(new QuoteItem(quote.getInt("ID"), quote.getString("title"), quote.getString("content")));
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            tvStatus.setText(PARSING_ERROR);
-        }
-
-        if (quotesList.size() > 0) {
-            tvStatus.setText(CAROUSALPREPARING);
-            //Here we build the carousal
-            Carousal carousal = Carousal.with(this).beginTransaction();
-            carousal.setContentTitle("Quotes from everywhere!").setContentText("Notice these random quotes from around the world")
-                    .setBigContentTitle("Quotes from everywhere!").setBigContentText("Notice these random quotes from around the world");
-            for ( QuoteItem item : quotesList) {
-                CarousalItem cItem = new CarousalItem(item.getID()+"", item.getTitle(), item.getContent(),null);
-
-                //Additionally we can set a type to it. It is useful if we are showing more than one type
-                //of data in carousal. so that we know, where to go when an item is clicked.
-                cItem.setType(TYPE_QUOTE);
-                carousal.addCarousalItem(cItem);
-            }
-            carousal.setOtherRegionClickable(true);
-            carousal.buildCarousal();
-        }
     }
 
     @Override
