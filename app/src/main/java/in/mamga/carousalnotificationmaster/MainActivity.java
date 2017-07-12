@@ -126,15 +126,16 @@ public class MainActivity extends AppCompatActivity {
             CarousalItem cItem = new CarousalItem(String.valueOf(i), "Title", "Desc", imageUrl);
             carousal.addCarousalItem(cItem);
         }*/
-        CarousalItem cItem1 = new CarousalItem("1", null, "Delete duplicate, blurry, and other photos that are hogging your storage.", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_1.png", null, Color.BLACK);
+        int color = Color.argb(255,105,105,105);
+        CarousalItem cItem1 = new CarousalItem("1", null, "Go through the music on your phone and clear songs you moved on from.", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_B_1.png", null, Color.BLACK);
         carousal.addCarousalItem(cItem1);
-        CarousalItem cItem2 = new CarousalItem("2", null, "Go through the music on your phone and clear songs you moved on from.", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_2.png", null, Color.GRAY);
+        CarousalItem cItem2 = new CarousalItem("2", null, "Delete duplicate, blurry, and other photos that are hogging your storage.", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_B_2.png", null, Color.GRAY);
         carousal.addCarousalItem(cItem2);
-        CarousalItem cItem3 = new CarousalItem("3", null, "We all have those apps we don’t use anymore, delete them!", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_3.png", null, Color.GREEN);
+        CarousalItem cItem3 = new CarousalItem("3", null, "We all have those apps we don’t use anymore, delete them!", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_C_3.png", null, color);
         carousal.addCarousalItem(cItem3);
-        CarousalItem cItem4 = new CarousalItem("4", null, "In your messaging apps delete conversations with lots of media.", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_4.png", null, Color.BLUE);
+        CarousalItem cItem4 = new CarousalItem("4", null, "In your messaging apps delete conversations with lots of media.", "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_B_4.png", null, Color.BLUE);
         carousal.addCarousalItem(cItem4);
-        CarousalItem cItem5 = new CarousalItem("5", null, null, "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_5.png", null, Color.BLACK);
+        CarousalItem cItem5 = new CarousalItem("5", null, null, "https://solutokb.staging.wpengine.com/wp-content/uploads/carouselgallery_B_5.png", null, Color.BLACK);
         carousal.addCarousalItem(cItem5);
         carousal.setBigContentText("text").setBigContentTitle("Title");
 

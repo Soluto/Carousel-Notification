@@ -15,7 +15,7 @@ public class CarousalEventReceiver extends BroadcastReceiver {
 
             //Respond only if both things are there
             if (carousalEvent > 0 && carousalSetUp != null)
-                Carousal.with(context).handleClickEvent(carousalEvent, carousalSetUp);
+                Carousal.with(context, null, null).handleClickEvent(carousalEvent, carousalSetUp);
         }
     }
 }

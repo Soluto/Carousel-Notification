@@ -34,7 +34,6 @@ public class Carousal {
     private String currentItemTitle, currentItemDescription;
     private AnalyticsWriter analyticsWriter;
     private LoggingApi logger;
-    public static final String TAG = "Carousal";
     private NotificationCompat.Builder mBuilder;
     private int carousalNotificationId = 9873715; //Random id for notification. Will cancel any
     // notification that have existing same id.
@@ -444,11 +443,6 @@ public class Carousal {
             bigView.setViewVisibility(R.id.ivArrowRight, View.VISIBLE);
         }
 
-        if (TextUtils.isEmpty(bigContentText)) {
-            bigView.setViewVisibility(R.id.tvCarousalContent, View.GONE);
-        } else {
-            bigView.setViewVisibility(R.id.tvCarousalContent, View.VISIBLE);
-        }
         if (TextUtils.isEmpty(bigContentTitle)) {
             bigView.setViewVisibility(R.id.tvCarousalTitle, View.GONE);
         } else {
@@ -525,7 +519,7 @@ public class Carousal {
         }
         bigView.setImageViewBitmap(R.id.ivCarousalAppIcon, largeIcon);
         bigView.setTextViewText(R.id.tvCarousalTitle, bigContentTitle);
-        bigView.setTextViewText(R.id.tvCarousalContent, bigContentText);
+       // bigView.setTextViewText(R.id.tvCarousalContent, bigContentText);
         bigView.setTextViewText(R.id.tvCurrentTitleText, currentItemTitle);
         bigView.setTextViewText(R.id.tvCurrentDescriptionText, currentItemDescription);
     }
