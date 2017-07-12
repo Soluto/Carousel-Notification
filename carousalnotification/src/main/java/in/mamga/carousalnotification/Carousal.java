@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.NotificationCompat;
 import android.text.TextUtils;
@@ -16,6 +17,9 @@ import android.view.View;
 import android.widget.RemoteViews;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Shailesh on 06/01/17.
@@ -27,8 +31,9 @@ public class Carousal {
     private ArrayList<CarousalItem> carousalItems;
     private String contentTitle, contentText; //title and text while it is small
     private String bigContentTitle, bigContentText; //title and text when it becomes large
-    private String leftItemTitle, leftItemDescription;
-    private String rightItemTitle, rightItemDescription;
+    private String currentItemTitle, currentItemDescription;
+    private AnalyticsWriter analyticsWriter;
+    private LoggingApi logger;
     public static final String TAG = "Carousal";
     private NotificationCompat.Builder mBuilder;
     private int carousalNotificationId = 9873715; //Random id for notification. Will cancel any
@@ -45,20 +50,23 @@ public class Carousal {
     static Bitmap largeIcon;
     static Bitmap caraousalPlaceholder;
 
-    private CarousalItem leftItem, rightItem;
-    private Bitmap leftItemBitmap, rightItemBitmap;
+    private CarousalItem currentItem;
+    private Bitmap currentItemBitmap;
 
     private CarousalSetUp carousalSetUp;
     private String smallIconPath, largeIconPath, placeHolderImagePath; //Stores path of these images if set by user
 
-    private boolean isOtherRegionClickable = false;
+    private boolean isOtherRegionClickable = true;
     private boolean isImagesInCarousal = true;
+    Date timeOnPage = new Date();
 
 
     public static final String CAROUSAL_ITEM_CLICKED_KEY = "CarousalNotificationItemClickedKey";
 
-    private Carousal(Context context) {
+    private Carousal(Context context, AnalyticsWriter analyticsWriter, LoggingApi logger) {
         this.context = context;
+        this.analyticsWriter = analyticsWriter;
+        this.logger = logger;
         mBuilder = new NotificationCompat.Builder(context);
     }
 
@@ -68,16 +76,16 @@ public class Carousal {
      * @param context : Required for Notifications
      * @return carousal instance of this class
      */
-    public static Carousal with(Context context) {
+    public static Carousal with(Context context, AnalyticsWriter analyticsWriter, LoggingApi logger) {
         if (carousal == null) {
             synchronized (Carousal.class) {
                 if (carousal == null) {
-                    carousal = new Carousal(context);
+                    carousal = new Carousal(context, analyticsWriter, logger);
                     try {
                         appIcon = CarousalUtilities.carousalDrawableToBitmap(context.getPackageManager().getApplicationIcon(context.getPackageName()));
                     } catch (PackageManager.NameNotFoundException e) {
                         appIcon = null;
-                        Log.e(TAG, "Unable to retrieve app Icon");
+                        logger.error("Unable to retrieve app Icon", e);
                     }
 
                 }
@@ -88,12 +96,12 @@ public class Carousal {
 
 
     //=========================================CAROUSAL SETTERS ===================================//
-
     /**
      * function to begin carousal trnsaction
      * It only cleans up existing carousal if exists
      */
     public Carousal beginTransaction() {
+        timeOnPage = new Date();
         clearCarousalIfExists();
         return this;
     }
@@ -110,7 +118,7 @@ public class Carousal {
             }
             carousalItems.add(carousalItem);
         } else {
-            Log.e(TAG, "Null carousal can't be added!");
+            logger.error("Null carousal can't be added!");
         }
         return this;
     }
@@ -124,7 +132,7 @@ public class Carousal {
         if (title != null) {
             this.contentTitle = title;
         } else {
-            Log.e(TAG, "Null parameter");
+            logger.error("Null parameter");
         }
         return this;
     }
@@ -138,7 +146,7 @@ public class Carousal {
         if (contentText != null) {
             this.contentText = contentText;
         } else {
-            Log.e(TAG, "Null parameter");
+            logger.error("Null parameter");
         }
         return this;
     }
@@ -152,7 +160,7 @@ public class Carousal {
         if (bigContentText != null) {
             this.bigContentText = bigContentText;
         } else {
-            Log.e(TAG, "Null parameter");
+            logger.error("Null parameter");
         }
         return this;
     }
@@ -166,7 +174,7 @@ public class Carousal {
         if (bigContentTitle != null) {
             this.bigContentTitle = bigContentTitle;
         } else {
-            Log.e(TAG, "Null parameter");
+            logger.error("Null parameter");
         }
         return this;
     }
@@ -181,7 +189,7 @@ public class Carousal {
         if (priority >= NotificationCompat.PRIORITY_MIN && priority <= NotificationCompat.PRIORITY_MAX) {
             notificationPriority = priority;
         } else {
-            Log.i(TAG, "Invalid priority");
+            logger.info("Invalid priority");
         }
         return this;
     }
@@ -198,7 +206,7 @@ public class Carousal {
             smallIcon = BitmapFactory.decodeResource(context.getResources(), resourceId);
         } catch (Exception e) {
             smallIcon = null;
-            Log.e(TAG, "Unable to decode resource");
+            logger.error("Unable to decode resource", e);
         }
 
         if (smallIcon != null) {  //meaning a valid resource
@@ -218,7 +226,7 @@ public class Carousal {
         try {
             largeIcon = BitmapFactory.decodeResource(context.getResources(), resourceId);
         } catch (Exception e) {
-            Log.e(TAG, "Unable to decode resource");
+            logger.error("Unable to decode resource", e);
         }
         return this;
     }
@@ -228,7 +236,7 @@ public class Carousal {
             largeIcon = large;
         } else {
             largeIcon = null;
-            Log.i(TAG, "Null parameter");
+            logger.info("Null parameter");
         }
         return this;
     }
@@ -244,7 +252,7 @@ public class Carousal {
             caraousalPlaceholder = BitmapFactory.decodeResource(context.getResources(), resourceId);
         } catch (Exception e) {
             caraousalPlaceholder = null;
-            Log.e(TAG, "Unable to decode resource");
+            logger.error("Unable to decode resource", e);
         }
         return this;
     }
@@ -254,7 +262,7 @@ public class Carousal {
             placeholder = placeholder;
         } else {
             placeholder = null;
-            Log.i(TAG, "Null parameter");
+            logger.info("Null parameter");
         }
         return this;
     }
@@ -292,7 +300,7 @@ public class Carousal {
                     public void onComplete() {
                         initiateCarousalTransaction();
                     }
-                });
+                }, logger);
                 basicDownloader.startAllDownloads();
             } else {
                 this.isImagesInCarousal = false;
@@ -308,11 +316,7 @@ public class Carousal {
     private void initiateCarousalTransaction() {
         currentStartIndex = 0;
         if (carousalItems != null && carousalItems.size() > 0) {
-            if (carousalItems.size() == 1) {
-                prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex), null);
-            } else {
-                prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex), carousalItems.get(currentStartIndex + 1));
-            }
+            prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex));
         }
 
     }
@@ -321,28 +325,18 @@ public class Carousal {
     /**
      * All Item variables are set here. After this showCarousal is hit.
      *
-     * @param leftItem
-     * @param rightItem
+     * @param currentItem
      */
-    private void prepareVariablesForCarousalAndShow(CarousalItem leftItem, CarousalItem rightItem) {
-        if (this.leftItem == null) {
-            this.leftItem = new CarousalItem();
+    private void prepareVariablesForCarousalAndShow(CarousalItem currentItem) {
+        if (this.currentItem == null) {
+            this.currentItem = new CarousalItem();
         }
-        if (this.rightItem == null) {
-            this.rightItem = new CarousalItem();
-        }
-        if (leftItem != null) {
-            this.leftItem = leftItem;
-            leftItemTitle = leftItem.getTitle();
-            leftItemDescription = leftItem.getDescription();
-            leftItemBitmap = getCarousalBitmap(leftItem);
-
-        }
-        if (rightItem != null) {
-            this.rightItem = rightItem;
-            rightItemTitle = rightItem.getTitle();
-            rightItemDescription = rightItem.getDescription();
-            rightItemBitmap = getCarousalBitmap(rightItem);
+        if (currentItem != null) {
+            writeEvent("StepView", getBaseAnalyticsExtraData());
+            this.currentItem = currentItem;
+            currentItemTitle = currentItem.getTitle();
+            currentItemDescription = currentItem.getDescription();
+            currentItemBitmap = getCarousalBitmap(currentItem);
 
         }
         showCarousal();
@@ -361,8 +355,7 @@ public class Carousal {
                 carousalSetUp = saveCarousalSetUp();
             } else {
                 carousalSetUp.currentStartIndex = currentStartIndex;
-                carousalSetUp.leftItem = leftItem;
-                carousalSetUp.rightItem = rightItem;
+                carousalSetUp.currentItem = currentItem;
             }
             //First set up all the icons
             setUpCarousalIcons();
@@ -371,11 +364,10 @@ public class Carousal {
             bigView = new RemoteViews(context.getApplicationContext().getPackageName(), R.layout.carousal_notification_item);
 
             //set up what needs to be visible and what not in the carousal
-            setUpCarousalVisibilities(bigView);
+            setUpCarousalLayout(bigView);
 
             setUpCarousalItems(bigView);
             setPendingIntents(bigView);
-
 
             NotificationCompat.Builder mBuilder =
                     new NotificationCompat.Builder(context);
@@ -393,15 +385,14 @@ public class Carousal {
                 mBuilder.setContentIntent(pIntent);
             }
 
-
+            mBuilder.setCustomBigContentView(bigView);
             foregroundNote = mBuilder.build();
-            foregroundNote.bigContentView = bigView;
 
             // now show notification..
             NotificationManager mNotifyManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             mNotifyManager.notify(carousalNotificationId, foregroundNote);
         } else {
-            Log.e(TAG, "Empty item array or of length less than 2");
+            logger.error("Empty item array or of length less than 2");
         }
 
     }
@@ -437,19 +428,22 @@ public class Carousal {
      *
      * @param bigView
      */
-    private void setUpCarousalVisibilities(RemoteViews bigView) {
-        if (carousalItems.size() < 3) {
+    private void setUpCarousalLayout(RemoteViews bigView) {
+        bigView.setTextColor(R.id.tvCurrentDescriptionText, currentItem.getTextColor());
+        bigView.setTextColor(R.id.tvCurrentTitleText, currentItem.getTextColor());
+
+        if(currentStartIndex == 0){
             bigView.setViewVisibility(R.id.ivArrowLeft, View.GONE);
-            bigView.setViewVisibility(R.id.ivArrowRight, View.GONE);
         } else {
             bigView.setViewVisibility(R.id.ivArrowLeft, View.VISIBLE);
+        }
+
+        if(currentStartIndex  == carousalItems.size() - 1){
+            bigView.setViewVisibility(R.id.ivArrowRight, View.GONE);
+        } else {
             bigView.setViewVisibility(R.id.ivArrowRight, View.VISIBLE);
         }
-        if (carousalItems.size() < 2) {
-            bigView.setViewVisibility(R.id.llRightItemLayout, View.GONE);
-        } else {
-            bigView.setViewVisibility(R.id.llRightItemLayout, View.VISIBLE);
-        }
+
         if (TextUtils.isEmpty(bigContentText)) {
             bigView.setViewVisibility(R.id.tvCarousalContent, View.GONE);
         } else {
@@ -460,32 +454,20 @@ public class Carousal {
         } else {
             bigView.setViewVisibility(R.id.tvCarousalTitle, View.VISIBLE);
         }
-        if (TextUtils.isEmpty(leftItemTitle)) {
-            bigView.setViewVisibility(R.id.tvLeftTitleText, View.GONE);
+        if (TextUtils.isEmpty(currentItemTitle)) {
+            bigView.setViewVisibility(R.id.tvCurrentTitleText, View.GONE);
         } else {
-            bigView.setViewVisibility(R.id.tvLeftTitleText, View.VISIBLE);
+            bigView.setViewVisibility(R.id.tvCurrentTitleText, View.VISIBLE);
         }
-        if (TextUtils.isEmpty(leftItemDescription)) {
-            bigView.setViewVisibility(R.id.tvLeftDescriptionText, View.GONE);
+        if (TextUtils.isEmpty(currentItemDescription)) {
+            bigView.setViewVisibility(R.id.tvCurrentDescriptionText, View.GONE);
         } else {
-            bigView.setViewVisibility(R.id.tvLeftDescriptionText, View.VISIBLE);
-        }
-        if (TextUtils.isEmpty(rightItemTitle)) {
-            bigView.setViewVisibility(R.id.tvRightTitleText, View.GONE);
-        } else {
-            bigView.setViewVisibility(R.id.tvRightTitleText, View.VISIBLE);
-        }
-        if (TextUtils.isEmpty(rightItemDescription)) {
-            bigView.setViewVisibility(R.id.tvRightDescriptionText, View.GONE);
-        } else {
-            bigView.setViewVisibility(R.id.tvRightDescriptionText, View.VISIBLE);
+            bigView.setViewVisibility(R.id.tvCurrentDescriptionText, View.VISIBLE);
         }
         if (!isImagesInCarousal) {
-            bigView.setViewVisibility(R.id.ivImageLeft, View.GONE);
-            bigView.setViewVisibility(R.id.ivImageRight, View.GONE);
+            bigView.setViewVisibility(R.id.ivCurrentImage, View.GONE);
         } else {
-            bigView.setViewVisibility(R.id.ivImageLeft, View.VISIBLE);
-            bigView.setViewVisibility(R.id.ivImageRight, View.VISIBLE);
+            bigView.setViewVisibility(R.id.ivCurrentImage, View.VISIBLE);
         }
 
     }
@@ -538,19 +520,14 @@ public class Carousal {
      * sets us carousal items into the view.
      */
     private void setUpCarousalItems(RemoteViews bigView) {
-        if (leftItemBitmap != null) {
-            bigView.setImageViewBitmap(R.id.ivImageLeft, leftItemBitmap);
-        }
-        if (rightItemBitmap != null) {
-            bigView.setImageViewBitmap(R.id.ivImageRight, rightItemBitmap);
+        if (currentItemBitmap != null) {
+            bigView.setImageViewBitmap(R.id.ivCurrentImage, currentItemBitmap);
         }
         bigView.setImageViewBitmap(R.id.ivCarousalAppIcon, largeIcon);
         bigView.setTextViewText(R.id.tvCarousalTitle, bigContentTitle);
         bigView.setTextViewText(R.id.tvCarousalContent, bigContentText);
-        bigView.setTextViewText(R.id.tvRightTitleText, rightItemTitle);
-        bigView.setTextViewText(R.id.tvRightDescriptionText, rightItemDescription);
-        bigView.setTextViewText(R.id.tvLeftTitleText, leftItemTitle);
-        bigView.setTextViewText(R.id.tvLeftDescriptionText, leftItemDescription);
+        bigView.setTextViewText(R.id.tvCurrentTitleText, currentItemTitle);
+        bigView.setTextViewText(R.id.tvCurrentDescriptionText, currentItemDescription);
     }
 
     /**
@@ -563,12 +540,9 @@ public class Carousal {
         //left arrow
         PendingIntent leftArrowPendingIntent = getPendingIntent(CarousalConstants.EVENT_LEFT_ARROW_CLICKED);
         bigView.setOnClickPendingIntent(R.id.ivArrowLeft, leftArrowPendingIntent);
-        //right item
-        PendingIntent rightItemPendingIntent = getPendingIntent(CarousalConstants.EVENT_RIGHT_ITEM_CLICKED);
-        bigView.setOnClickPendingIntent(R.id.llRightItemLayout, rightItemPendingIntent);
-        //left item
-        PendingIntent leftItemPendingIntent = getPendingIntent(CarousalConstants.EVENT_LEFT_ITEM_CLICKED);
-        bigView.setOnClickPendingIntent(R.id.llLeftItemLayout, leftItemPendingIntent);
+        //current item
+        PendingIntent currentItemPendingIntent = getPendingIntent(CarousalConstants.EVENT_CURRENT_ITEM_CLICKED);
+        bigView.setOnClickPendingIntent(R.id.llItemLayout, currentItemPendingIntent);
     }
 
     /**
@@ -598,7 +572,7 @@ public class Carousal {
         CarousalSetUp cr = new CarousalSetUp(carousalItems, contentTitle, contentText,
                 bigContentTitle, bigContentText, carousalNotificationId,
                 currentStartIndex, smallIconPath, smallIconResourceId, largeIconPath,
-                placeHolderImagePath, leftItem, rightItem, isOtherRegionClickable, isImagesInCarousal);
+                placeHolderImagePath, currentItem, isOtherRegionClickable, isImagesInCarousal);
         return cr;
     }
 
@@ -629,15 +603,10 @@ public class Carousal {
      */
     public Carousal clearCarousalIfExists() {
         if (carousalItems != null) {
-            /*for (CarousalItem cr : carousalItems) {
-                if (cr.getImage_file_name() != null)
-                if(context.deleteFile(cr.getImage_file_name()))
-                    Log.i(TAG, "Image deleted.");
-            }*/
             carousalItems.clear();
 
             smallIconResourceId = -1;
-            isOtherRegionClickable = false;
+            isOtherRegionClickable = true;
             isImagesInCarousal = true;
             smallIcon = null;
             smallIconPath = null;
@@ -677,11 +646,8 @@ public class Carousal {
             case CarousalConstants.EVENT_RIGHT_ARROW_CLICKED:
                 onRightArrowClicked();
                 break;
-            case CarousalConstants.EVENT_LEFT_ITEM_CLICKED:
-                onLeftItemClicked();
-                break;
-            case CarousalConstants.EVENT_RIGHT_ITEM_CLICKED:
-                onRightItemClicked();
+            case CarousalConstants.EVENT_CURRENT_ITEM_CLICKED:
+                onCurrentItemClicked();
                 break;
             case CarousalConstants.EVENT_OTHER_REGION_CLICKED:
                 onOtherRegionClicked ();
@@ -712,8 +678,7 @@ public class Carousal {
             smallIconPath = setUp.smallIcon;
             largeIconPath = setUp.largeIcon;
             placeHolderImagePath = setUp.caraousalPlaceholder;
-            leftItem = setUp.leftItem;
-            rightItem = setUp.rightItem;
+            currentItem = setUp.currentItem;
             isOtherRegionClickable = setUp.isOtherRegionClickable;
             isImagesInCarousal = setUp.isImagesInCarousal;
 
@@ -741,13 +706,9 @@ public class Carousal {
         }
     }
 
-    private void onRightItemClicked() {
-        sendItemClickedBroadcast(rightItem);
-    }
-
-    private void onLeftItemClicked() {
-        sendItemClickedBroadcast(leftItem);
-
+    private void onCurrentItemClicked() {
+        writeAction("ItemSelected");
+        sendItemClickedBroadcast(currentItem);
     }
 
     /**
@@ -765,10 +726,9 @@ public class Carousal {
                 clearCarousalIfExists();
             } catch (Exception e) {
                 e.printStackTrace();
-                Log.e(TAG, "Unable To send notification's pendingIntent");
+                logger.error("Unable To send notification's pendingIntent", e);
             }
         }
-
     }
 
     private void sendItemClickedBroadcast(CarousalItem cItem) {
@@ -780,12 +740,11 @@ public class Carousal {
 
         context.getApplicationContext().sendBroadcast(i);
 
-
         try {
             clearCarousalIfExists();
         } catch (Exception e) {
             e.printStackTrace();
-            Log.e(TAG, "Unable To send notification's pendingIntent");
+            logger.error("Unable To send notification's pendingIntent", e);
         }
     }
 
@@ -793,50 +752,45 @@ public class Carousal {
      * Here we choose the items for left and right an call prepareVariablesForCarousalAndShow() thereafter
      */
     private void onLeftArrowClicked() {
-
-        if (carousalItems != null && carousalItems.size() > currentStartIndex) {
-
-            switch (currentStartIndex) {
-
-                case 1:
-                    currentStartIndex = carousalItems.size() - 1;
-                    prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex), carousalItems.get(0));
-                    break;
-                case 0:
-                    currentStartIndex = carousalItems.size() - 2;
-                    prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex), carousalItems.get(currentStartIndex + 1));
-                    break;
-                default:
-                    currentStartIndex -= 2;
-                    prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex), carousalItems.get(currentStartIndex + 1));
-                    break;
-            }
+        if (carousalItems != null && currentStartIndex > 0) {
+            writeAction("Previous");
+            currentStartIndex -= 1;
+            prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex));
         }
     }
 
     private void onRightArrowClicked() {
         if (carousalItems != null && carousalItems.size() > currentStartIndex) {
-
-            int difference = carousalItems.size() - currentStartIndex;
-            switch (difference) {
-                case 3:
-                    currentStartIndex += 2;
-                    prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex), carousalItems.get(0));
-                    break;
-                case 2:
-                    currentStartIndex = 0;
-                    prepareVariablesForCarousalAndShow(carousalItems.get(0), carousalItems.get(1));
-                    break;
-                case 1:
-                    currentStartIndex = 1;
-                    prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex), carousalItems.get(currentStartIndex + 1));
-                    break;
-                default:
-                    currentStartIndex += 2;
-                    prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex), carousalItems.get(currentStartIndex + 1));
-                    break;
-            }
+            writeAction("Next");
+            currentStartIndex += 1;
+            prepareVariablesForCarousalAndShow(carousalItems.get(currentStartIndex));
         }
     }
 
+    private void writeAction(String actionId){
+        Date newDate = new Date();
+        long diff = (newDate.getTime() - timeOnPage.getTime()) / 1000;
+        timeOnPage = newDate;
+        HashMap extraData = getBaseAnalyticsExtraData();
+        extraData.put("ActionId", actionId);
+        extraData.put("TimeOnStepInSec", diff);
+        writeEvent("Click", extraData);
+    }
+
+    private HashMap getBaseAnalyticsExtraData(){
+        HashMap extraData = new HashMap();
+        extraData.put("StepIndex", currentStartIndex);
+        extraData.put("TotalSteps", carousalItems.size());
+        return extraData;
+    }
+
+    private void writeEvent(String eventName, Map<String, Object> extraData){
+        if(this.analyticsWriter != null){
+            try {
+                this.analyticsWriter.write(eventName, extraData);
+            } catch (Exception ex) {
+                logger.warn("Unexpected exception while parse analytics json", ex);
+            }
+        }
+    }
 }

@@ -20,20 +20,20 @@ import java.util.ArrayList;
  * @version 1.1
  */
 public class BasicImageDownloader {
-
-    private final String TAG = this.getClass().getSimpleName();
     private Context context;
     private ArrayList<CarousalItem> carousalItems;
     private OnDownloadsCompletedListener onDownloadsCompletedListener;
+    private LoggingApi logger;
     int numberOfImages;
     static int currentDownloadTaskIndex = 0;
     CarousalItem currentItem;
 
-    public BasicImageDownloader(Context context, ArrayList<CarousalItem> carousalItems, int numberOfImages, @NonNull OnDownloadsCompletedListener onDownloadsCompletedListener) {
+    public BasicImageDownloader(Context context, ArrayList<CarousalItem> carousalItems, int numberOfImages, @NonNull OnDownloadsCompletedListener onDownloadsCompletedListener, LoggingApi logger) {
         this.carousalItems = carousalItems;
         this.context = context;
         this.onDownloadsCompletedListener = onDownloadsCompletedListener;
         this.numberOfImages = numberOfImages;
+        this.logger = logger;
     }
 
     private OnImageLoaderListener mImageLoaderListener = new OnImageLoaderListener() {
@@ -46,7 +46,6 @@ public class BasicImageDownloader {
         @Override
         public void onComplete(String resultPath) {
             updateDownLoad(resultPath);
-
         }
     };
 
@@ -140,9 +139,10 @@ public class BasicImageDownloader {
                 InputStream is = null;
                 ByteArrayOutputStream out = null;
                 try {
+
                     connection = (HttpURLConnection) new URL(imageUrl).openConnection();
                     is = connection.getInputStream();
-                    bitmap = BitmapFactory.decodeStream(is);
+                    bitmap =  BitmapFactory.decodeStream(is);
                     if (bitmap != null) {
                         //scaling bitmap to ensure minimum memory usage
                         int sampleSize = CarousalUtilities.carousalCalculateInSampleSize(bitmap.getWidth(), bitmap.getHeight(), 250, 250);
@@ -175,11 +175,11 @@ public class BasicImageDownloader {
             @Override
             protected void onPostExecute(String result) {
                 if (result == null) {
-                    Log.e(TAG, "factory returned a null result");
+                    logger.error("factory returned a null result");
                     mImageLoaderListener.onError(new ImageError("downloaded file could not be decoded as bitmap")
                             .setErrorCode(ImageError.ERROR_DECODE_FAILED));
                 } else {
-                    Log.d(TAG, "download complete");
+                    logger.debug("download complete");
                     if (currentItem != null)
                         currentItem.setImage_file_location(result);
                         currentItem.setImage_file_name(CarousalConstants.CAROUSAL_IMAGE_BEGENNING + currentTimeInMillis);

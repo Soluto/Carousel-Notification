@@ -1,5 +1,6 @@
 package in.mamga.carousalnotification;
 
+import android.graphics.Color;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -15,15 +16,16 @@ public class CarousalItem implements Parcelable {
     String image_file_location;
     String image_file_name;
     String type;
-
+    String targetUrl;
+    int textColor;
 
 
     public CarousalItem( String photo_url) {
-        this(null, null, null, photo_url);
+        this(null, null, null, photo_url, null, Color.BLACK);
     }
 
     public CarousalItem() {
-        this(null, null, null, null);
+        this(null, null, null, null, null, Color.BLACK);
     }
 
     /**
@@ -33,11 +35,13 @@ public class CarousalItem implements Parcelable {
      * @param description
      * @param photo_url
      */
-    public CarousalItem(String id, String title, String description, String photo_url) {
+    public CarousalItem(String id, String title, String description, String photo_url, String targetUrl, int textColor) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.photo_url = photo_url;
+        this.targetUrl = targetUrl;
+        this.textColor = textColor;
     }
 
     public String getId() {
@@ -96,6 +100,22 @@ public class CarousalItem implements Parcelable {
         this.type = type;
     }
 
+    public String getTargetUrl() {
+        return targetUrl;
+    }
+
+    public void setTargetUrl(String targetUrl) {
+        this.targetUrl = targetUrl;
+    }
+
+    public int getTextColor() {
+        return textColor;
+    }
+
+    public void setTextColor(int textColor) {
+        this.textColor = textColor;
+    }
+
     protected CarousalItem(Parcel in) {
         id = in.readString();
         title = in.readString();
@@ -104,6 +124,7 @@ public class CarousalItem implements Parcelable {
         image_file_location = in.readString();
         image_file_name = in.readString();
         type = in.readString();
+        targetUrl = in.readString();
     }
 
     @Override
@@ -120,6 +141,7 @@ public class CarousalItem implements Parcelable {
         dest.writeString(image_file_location);
         dest.writeString(image_file_name);
         dest.writeString(type);
+        dest.writeString(targetUrl);
     }
 
     @SuppressWarnings("unused")
