@@ -1,1 +1,1 @@
-include ':app', ':carousalnotification'
+include ':app', ':carousel-notification-android'

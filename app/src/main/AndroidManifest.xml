@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="in.mamga.carousalnotificationmaster">
+    package="com.soluto.carouselnotificationmaster">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -18,9 +18,9 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".CarousalItemClickReceiver">
+        <receiver android:name=".CarouselItemClickReceiver">
             <intent-filter>
-                <action android:name="in.mamga.CAROUSALNOTIFICATIONITEMCLICKED" />
+                <action android:name="com.soluto.CAROUSELNOTIFICATIONITEMCLICKED" />
             </intent-filter>
         </receiver>
 

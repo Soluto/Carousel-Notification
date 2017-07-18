@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="carouselTitleTextColor">#39393c</color>
+    <color name="carouselDescriptionTextColor">#39393c</color>
+    <color name="carouselItemTitleTextColor">#ffffff</color>
+    <color name="carouselItemDescriptionTextColor">#ffffff</color>
+    <color name="carouselNotificationBackgroundColor">#f2f2f2</color>
+    <color name="carouselItemCardBackgroundColor">#ffffff</color>
+</resources>
